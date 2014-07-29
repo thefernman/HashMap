@@ -10,7 +10,7 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
     private HashFunction<? super KeyType> hash2;
     private static final int DEFAULT_ARRAY_SIZE = 11;
     private Node<KeyType, ValueType>[] arr = null;
-    private int[] length;
+    private int[] listSizes;
     private int theSize = 0;
 
     public MyHashMap()
@@ -29,33 +29,14 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
     {
         theSize = 0;
         arr = new Node[ DEFAULT_ARRAY_SIZE ];
-        length = new int[ DEFAULT_ARRAY_SIZE ];
+        listSizes = new int[ DEFAULT_ARRAY_SIZE ];
     }
 
     public void rehash()
     {
-        MyHashMap<KeyType, ValueType> bigger = new MyHashMap(hash1, hash2);
-
-        int[] primes =
-        {
-            2, 3, 5, 7, 11
-        };
-        int number = arr.length * 2;
-//        boolean Prime = false;
-//        while ( !Prime )
-//        {
-//            for ( int prime : primes )
-//            {
-//                if ( number % prime != 0 )
-//                    Prime = true;
-//                if ( number % prime == 0 )
-//                    Prime = false;
-//            }
-//            if ( Prime )
-//                ++number;
-//        }
-        bigger.arr = new Node[ number ];
-        bigger.length = new int[ number ];
+        MyHashMap<KeyType, ValueType> bigger = new MyHashMap( hash1, hash2 );
+        bigger.arr = new Node[ arr.length * 2 ];
+        bigger.listSizes = new int[ arr.length * 2 ];
 
         for ( Node<KeyType, ValueType> lst : arr )
         {
@@ -64,8 +45,9 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
                 bigger.put( p.key, p.value );
             }
         }
+
         arr = bigger.arr;
-        length = bigger.length;
+        listSizes = bigger.listSizes;
     }
 
     public int size()
@@ -77,28 +59,13 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
     {
         doClear();
     }
-    
-    private int myHash( KeyType k, HashFunction<? super KeyType> hash )
-    {
-        if ( hash == null )
-            return Math.abs( k.hashCode() % arr.length );
-        else
-            return Math.abs( hash.hashCode( k ) % arr.length );
-    }
-
-//    private int myHash2( KeyType k )
-//    {
-//        if ( hash2 == null )
-//            return Math.abs( k.hashCode() % arr.length );
-//        else
-//            return Math.abs( hash2.hashCode( k ) % arr.length );
-//    }
 
     public ValueType put( KeyType k, ValueType v )
     {
         if ( size() > arr.length )
             rehash();
-        int whichList = myHash( k, hash1 );
+        
+        int whichList = myHash( k );
         int whichList2 = myHash2( k );
 
         for ( Node<KeyType, ValueType> p = arr[ whichList]; p != null; p = p.next )
@@ -121,17 +88,17 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
             }
         }
 
-        if ( length[whichList] <= length[whichList2] )
+        if ( listSizes[whichList] <= listSizes[whichList2] )
         {
             arr[whichList] = new Node<>( k, v, arr[whichList] );
-            ++length[whichList];
+            ++listSizes[whichList];
             ++theSize;
             return null;
         }
         else
         {
             arr[whichList2] = new Node<>( k, v, arr[whichList2] );
-            ++length[whichList2];
+            ++listSizes[whichList2];
             ++theSize;
             return null;
         }
@@ -147,7 +114,7 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
             if ( arr[whichList].key.equals( k ) )
             {
                 arr[ whichList] = arr[whichList].next;
-                --length[whichList];
+                --listSizes[whichList];
                 --theSize;
                 return true;
             }
@@ -156,7 +123,7 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
                 if ( p.next.key.equals( k ) )
                 {
                     p.next = p.next.next;
-                    --length[whichList];
+                    --listSizes[whichList];
                     --theSize;
                     return true;
                 }
@@ -168,7 +135,7 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
             if ( arr[whichList2].key.equals( k ) )
             {
                 arr[ whichList2] = arr[whichList2].next;
-                --length[whichList2];
+                --listSizes[whichList2];
                 --theSize;
                 return true;
             }
@@ -177,7 +144,7 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
                 if ( p.next.key.equals( k ) )
                 {
                     p.next = p.next.next;
-                    --length[whichList2];
+                    --listSizes[whichList2];
                     --theSize;
                     return true;
                 }
@@ -185,6 +152,22 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
         }
 
         return false;
+    }
+
+    private int myHash( KeyType k )
+    {
+        if ( hash1 == null )
+            return Math.abs( k.hashCode() % arr.length );
+        else
+            return Math.abs( hash1.hashCode( k ) % arr.length );
+    }
+
+    private int myHash2( KeyType k )
+    {
+        if ( hash2 == null )
+            return Math.abs( k.hashCode() % arr.length );
+        else
+            return Math.abs( hash2.hashCode( k ) % arr.length );
     }
 
     public ValueType get( KeyType k )
@@ -197,7 +180,7 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
             if ( p.key.equals( k ) )
                 return p.value;
         }
-        
+
         for ( Node<KeyType, ValueType> p = arr[whichList2]; p != null; p = p.next )
         {
             if ( p.key.equals( k ) )
@@ -223,9 +206,9 @@ public class MyHashMap<KeyType, ValueType> implements Iterable<Map.Entry<KeyType
     public int[] getLengths()
     {
         int[] temp = new int[ 20 ];
-        for ( int i = 0; i < length.length; ++i )
+        for ( int i = 0; i < listSizes.length; ++i )
         {
-            ++temp[length[i]];
+            ++temp[listSizes[i]];
         }
         return temp;
     }
