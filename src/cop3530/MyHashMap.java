@@ -322,8 +322,8 @@ public class MyHashMap<KeyType, ValueType>
     }
 
     /**
-     *
-     * @return
+     * Iterator method tranverse the list.
+     * @return Returns an iterator.
      */
     @Override
     public Iterator<Map.Entry<KeyType, ValueType>> iterator()
