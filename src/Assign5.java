@@ -1,5 +1,3 @@
-package cop3530;
-
 import cop3530.MyHashMap;
 import java.util.Map;
 import java.util.HashMap;
